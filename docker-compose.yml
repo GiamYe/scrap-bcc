@@ -1,0 +1,12 @@
+bcc:
+  build: /home/zhan/Documents/MyProject/scrap-bcc
+  ports:
+    - 6023:6023
+  volumes:
+    - /home/zhan/Documents/MyProject/bcc:/data 
+  environment:
+    ADV_PATH: "/data/adv.txt"
+    ADJ_PATH: "/data/adj.txt"
+    RESULT_PATH: "/data/result.txt"
+    LEGACY_PATH: "/data/legacy.txt"
+  net: "host"

@@ -2,6 +2,7 @@
 from scrapy.spider import Spider, Request
 from scrapy import FormRequest
 import urllib
+import os
 
 class BccSpider(Spider):
     name = 'bcc'
@@ -11,8 +12,8 @@ class BccSpider(Spider):
         keys = []
         advs = []
         adjs = []
-        adv_file_path = '/data/adv.txt'
-        adj_file_path = '/data/adj.txt'
+        adv_file_path = os.getenv('ADV_PATH')
+        adj_file_path = os.getenv('ADJ_PATH')
         adv_file = open(adv_file_path)
         adj_file = open(adj_file_path)
         while 1:
@@ -37,26 +38,32 @@ class BccSpider(Spider):
 
     def start_requests(self):
         keys = self._get_search_keys()
-        #reqs = [FormRequest('http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)), dont_filter=True) for k in keys]
-
-        return [FormRequest('http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)), dont_filter=True) for k in keys]
+        for k in keys:
+            yield Request(url='http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)),
+                          meta={
+                              'dont_filter': True,
+                              'dont_redirect': True,
+                              'handle_httpstatus_list': [302]}
+                          )
+        #return [FormRequest('http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)), dont_filter=True, ) for k in keys]
 
     def parse(self, response):
         #keys = BccSpider._get_search_keys()
+        check_path = 'check.txt'
+        key = urllib.unquote(response.url.split('/')[-1])
         texts = response.xpath('//tbody/tr/td/text()').extract()
 
-        filename = '/data/result.txt'
+        filename = os.getenv('RESULT_PATH')
         texts = [t.encode('utf-8') for t in texts if '\n' not in t]
         merged_texts = []
-        key = urllib.unquote(response.url.split('/')[-1])
         for i in xrange(0, len(texts)):
             index = i % 2
             if index == 0:
                 merged_texts.append(texts[i]+texts[i+1]+'\n')
         #print 'lines num:', len(merged_texts)
-        legacy_file_path = '/data/legacy.txt'
+        legacy_file_path = os.getenv('LEGACY_PATH')
         if len(merged_texts) == 100:
-            with open(legacy_file_path, 'wb') as legacy_file:
+            with open(legacy_file_path, 'a') as legacy_file:
                 legacy_file.write(key)
             return
         with open(filename, 'a') as f:
