@@ -41,9 +41,10 @@ class BccSpider(Spider):
         for k in keys:
             yield Request(url='http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)),
                           meta={
-                              'dont_filter': True,
-                              'dont_redirect': True,
-                              'handle_httpstatus_list': [302]}
+                              'dont_filter': True
+                          }
+                              # 'dont_redirect': True,
+                              # 'handle_httpstatus_list': [302]}
                           )
         #return [FormRequest('http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)), dont_filter=True, ) for k in keys]
 
@@ -60,12 +61,14 @@ class BccSpider(Spider):
             index = i % 2
             if index == 0:
                 merged_texts.append(texts[i]+texts[i+1]+'\n')
-        #print 'lines num:', len(merged_texts)
+        # print 'lines num:', len(merged_texts)
+        # not_200_path = os.getenv('NOT_200')
+        # if response.status != 200:
+        #     with open(key+'\t'+str(len(set(merged_texts)))+'\n')
         legacy_file_path = os.getenv('LEGACY_PATH')
         if len(merged_texts) == 100:
             with open(legacy_file_path, 'a') as legacy_file:
-                legacy_file.write(key)
-            return
+                legacy_file.write(key+'\n')
         with open(filename, 'a') as f:
             f.write(key+'\t'+str(len(set(merged_texts)))+'\n')
 
