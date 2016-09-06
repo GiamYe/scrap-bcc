@@ -33,7 +33,7 @@ class BccSpider(Spider):
                 keys.append(v+j)
         adj_file.close()
         adv_file.close()
-        print 'keys:', keys
+        # print 'keys:', keys
         return keys
 
     def start_requests(self):
@@ -41,19 +41,30 @@ class BccSpider(Spider):
         for k in keys:
             yield Request(url='http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)),
                           meta={
-                              'dont_filter': True
+                              'dont_filter': True,
+                              'dont_merge_cookies': True
                           }
                               # 'dont_redirect': True,
                               # 'handle_httpstatus_list': [302]}
                           )
         #return [FormRequest('http://bcc.blcu.edu.cn/zh/search/0/{0}'.format(urllib.quote(k)), dont_filter=True, ) for k in keys]
 
-    def parse(self, response):
-        #keys = BccSpider._get_search_keys()
-        check_path = 'check.txt'
-        key = urllib.unquote(response.url.split('/')[-1])
-        texts = response.xpath('//tbody/tr/td/text()').extract()
+    def parse_detail(self, response):
+        reference = response.xpath('//body/div[@class="modal-body"]/b/text()').extract()
+        key = response.xpath('//body/div[@class="modal-body"]/strong/text()').extract()
+        texts = response.xpath('//body/div[@class="modal-body"]/text()').extract()
+        detail_file = os.getenv('DETAIL_PATH')
+        with open(detail_file, 'a') as f:
+            rf = 'Reference: '+reference[0].encode('utf-8')+'\n'
+            if len(texts)==3:
+                pre_part = texts[1].encode('utf-8')
+                after_part = texts[2].encode('utf-8')
+                f.write(rf+pre_part+key[0].encode('utf-8')+after_part+'\n')
 
+    def parse(self, response):
+        original_key = response.url.split('/')[-1]
+        key = urllib.unquote(original_key.split('?')[0])
+        texts = response.xpath('//tbody/tr/td/text()').extract()
         filename = os.getenv('RESULT_PATH')
         texts = [t.encode('utf-8') for t in texts if '\n' not in t]
         merged_texts = []
@@ -71,6 +82,16 @@ class BccSpider(Spider):
                 legacy_file.write(key+'\n')
         with open(filename, 'a') as f:
             f.write(key+'\t'+str(len(set(merged_texts)))+'\n')
+        if len(merged_texts)>0:
+            detail_urls = response.xpath('//tbody/tr/td/a/@href').extract()
+            for d in detail_urls:
+                print "detail url is %s \n" % d
+                yield Request(url='http://bcc.blcu.edu.cn{0}'.format(d),
+                              meta={
+                              'dont_filter': True,
+                              'dont_merge_cookies': True
+                          },
+                              callback=self.parse_detail)
 
 
 

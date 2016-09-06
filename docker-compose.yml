@@ -9,4 +9,5 @@ bcc:
     ADJ_PATH: "/data/adj.txt"
     RESULT_PATH: "/data/result.txt"
     LEGACY_PATH: "/data/legacy.txt"
+    DETAIL_PATH: "/data/detail.txt"
   net: "host"
